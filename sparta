@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+require 'zlib'
+require 'digest/sha1'
+require 'fileutils'
+
+GIT_DIR = ENV['GIT_DIR'] || '.git'
+OBJECTS_DIR = 'objects'
+
+def format_file(file_name)
+  file = File.open(file_name)
+  "blob #{file.stat.size}\0#{file.read}"
+end
+
+def sha1(file_name)
+  Digest::SHA1.hexdigest(format_file(file_name))
+end
+
+def compressed_file(file_name)
+  Zlib::Deflate.deflate(format_file(file_name))
+end
+
+def uncompressed_file(file)
+  Zlib::Inflate.inflate(file)
+end
+
+def write_object(file_name)
+  hash = sha1(file_name)
+  path = "#{GIT_DIR}/#{OBJECTS_DIR}/#{hash[0,2]}/#{hash[2..-1]}"
+  FileUtils.mkdir_p(File.dirname(path))
+  File.open(path, 'w') { |f| f.write compressed_file(file_name) }
+  hash
+end
+
+def cat_file(hash)
+  path = "#{GIT_DIR}/#{OBJECTS_DIR}/#{hash[0,2]}/#{hash[2..-1]}"
+  puts uncompressed_file(File.open(path).read)
+end
+
+case ARGV[0]
+when /hash/
+  puts sha1 ARGV[1]
+when /write/
+  puts "stored: #{write_object ARGV[1]}"
+when /cat/
+  cat_file ARGV[1]
+end
+
+
+

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+sha1() {
+    git hash-object $1
+}
+
+write_object() {
+    git hash-object -w $1
+}
+
+cat_file() {
+    git cat-file -p $1
+}
+
+case $1 in
+    hash)
+	sha1 $2;
+    ;;
+    write)
+	write_object $2;
+    ;;
+    cat)
+	cat_file $2;
+    ;;
+esac
